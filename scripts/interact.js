@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 
-const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const CONTRACT_ADDRESS = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9";
 
 async function main() {
   // Cek apakah address sudah diganti
@@ -45,31 +45,20 @@ async function main() {
   // --- Simulasi Voting ---
   console.log("\n🗳️  Simulasi Voting:");
 
-  // Helper function untuk vote dengan pengecekan
-  async function tryVote(voterSigner, candidateId, voterLabel) {
-    const alreadyVoted = await voting.hasVoted(voterSigner.address);
-    if (alreadyVoted) {
-      console.log(
-        `   ${voterLabel} (${voterSigner.address}) sudah pernah vote — dilewati`,
-      );
-      return;
-    }
-    try {
-      const tx = await voting.connect(voterSigner).vote(candidateId);
-      await tx.wait();
-      console.log(
-        `   ${voterLabel} (${voterSigner.address}) memilih kandidat ${candidateId}... ✅ Vote berhasil!`,
-      );
-    } catch (error) {
-      console.log(
-        `   ${voterLabel} gagal vote: ${error.reason || error.message}`,
-      );
-    }
-  }
+  // Voter1 memilih Budi Santoso (index 0)
+  let tx = await voting.connect(voter1).vote(0);
+  await tx.wait();
+  console.log(`   Voter1 (${voter1.address}) memilih kandidat 0... ✅ Vote berhasil!`);
 
-  await tryVote(voter1, 0, "Voter1"); // vote Budi
-  await tryVote(voter2, 0, "Voter2"); // vote Budi
-  await tryVote(voter3, 1, "Voter3"); // vote Siti
+  // Voter2 memilih Budi Santoso (index 0)
+  tx = await voting.connect(voter2).vote(0);
+  await tx.wait();
+  console.log(`   Voter2 (${voter2.address}) memilih kandidat 0... ✅ Vote berhasil!`);
+
+  // Voter3 memilih Siti Rahayu (index 1)
+  tx = await voting.connect(voter3).vote(1);
+  await tx.wait();
+  console.log(`   Voter3 (${voter3.address}) memilih kandidat 1... ✅ Vote berhasil!`);
 
   // --- Hasil Akhir ---
   console.log("\n📊 Hasil Voting:");
