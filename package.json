@@ -1,0 +1,16 @@
+{
+  "name": "simple-voting",
+  "version": "1.0.0",
+  "description": "Simple Voting Smart Contract - Blockchain Project 2",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js --network localhost",
+    "interact": "hardhat run scripts/interact.js --network localhost",
+    "node": "hardhat node"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0"
+  }
+}

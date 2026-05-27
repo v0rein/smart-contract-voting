@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Hardhat artifacts & cache
+artifacts/
+cache/
+
+# Coverage
+coverage/
+coverage.json
+
+# TypeChain
+typechain/
+typechain-types/
+
+# Hardhat log files
+*.log
+
+# Environment variables (JANGAN commit file ini!)
+.env
+.env.local
+.env.production
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.png
+!images/*.png
+
+# Misc
+.gemini/
