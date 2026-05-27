@@ -115,7 +115,9 @@ npx hardhat run scripts/interact.js --network localhost
 >
 > 2. Test passing (`npx hardhat test`)
 >
-> ![alt text](images/deploy1.png) > ![alt text](images/deploy2.png)
+> ![alt text](images/deploy1.png)
+>
+> ![alt text](images/deploy2.png)
 >
 > 3. Deploy berhasil (output contract address)
 >
