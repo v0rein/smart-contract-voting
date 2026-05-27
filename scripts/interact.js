@@ -48,17 +48,23 @@ async function main() {
   // Voter1 memilih Budi Santoso (index 0)
   let tx = await voting.connect(voter1).vote(0);
   await tx.wait();
-  console.log(`   Voter1 (${voter1.address}) memilih kandidat 0... ✅ Vote berhasil!`);
+  console.log(
+    `   Voter1 (${voter1.address}) memilih kandidat 0... ✅ Vote berhasil!`,
+  );
 
   // Voter2 memilih Budi Santoso (index 0)
   tx = await voting.connect(voter2).vote(0);
   await tx.wait();
-  console.log(`   Voter2 (${voter2.address}) memilih kandidat 0... ✅ Vote berhasil!`);
+  console.log(
+    `   Voter2 (${voter2.address}) memilih kandidat 0... ✅ Vote berhasil!`,
+  );
 
   // Voter3 memilih Siti Rahayu (index 1)
   tx = await voting.connect(voter3).vote(1);
   await tx.wait();
-  console.log(`   Voter3 (${voter3.address}) memilih kandidat 1... ✅ Vote berhasil!`);
+  console.log(
+    `   Voter3 (${voter3.address}) memilih kandidat 1... ✅ Vote berhasil!`,
+  );
 
   // --- Hasil Akhir ---
   console.log("\n📊 Hasil Voting:");

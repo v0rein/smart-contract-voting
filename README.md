@@ -125,7 +125,9 @@ npx hardhat run scripts/interact.js --network localhost
 >
 > 4. MetaMask connected (Network Hardhat Local)
 >
-> ![alt text](images/vote1.png) > ![alt text](images/vote2.png)
+> ![alt text](images/vote1.png)
+>
+> ![alt text](images/vote2.png)
 >
 > 5. Transaksi berhasil (minimal 2 transaksi berbeda)
 >
