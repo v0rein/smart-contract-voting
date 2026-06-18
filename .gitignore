@@ -39,3 +39,8 @@ desktop.ini
 # Misc
 .gemini/
 project-02-smart-contract.md
+project-03-dapp.md
+
+# Frontend
+frontend/node_modules/
+frontend/dist/

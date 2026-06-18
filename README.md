@@ -1,136 +1,158 @@
-# Simple Voting - Smart Contract
+# VoteChain - Decentralized Voting dApp
 
 ## Deskripsi
 
-Sistem voting sederhana berbasis blockchain yang memungkinkan pemilihan (ketua kelas, proposal, dll). Smart contract ini di-deploy ke local blockchain menggunakan Hardhat dan dapat diinteraksikan menggunakan MetaMask.
+**VoteChain** adalah Decentralized Application (dApp) untuk sistem voting on-chain yang transparan, aman, dan tidak dapat dimanipulasi. Setiap suara tercatat secara permanen di blockchain Ethereum. Aplikasi ini menggunakan smart contract Solidity sebagai backend dan React sebagai frontend, terintegrasi melalui ethers.js dan MetaMask wallet.
 
 ## Anggota Kelompok
 
-- Dionisius Marcell Putra Indranto (5027231044)
+| Nama | NRP | Kontribusi |
+|------|-----|------------|
+| Dionisius Marcell Putra Indranto | 5027231044 | Smart Contract + Frontend + Integrasi Web3 |
+
+## Tech Stack
+
+- **Smart Contract:** Solidity ^0.8.20 + Hardhat
+- **Frontend:** React + Vite
+- **Web3 Library:** ethers.js v6
+- **Wallet:** MetaMask
+- **Testing:** Chai + Hardhat Toolbox
 
 ## Fitur
 
 ### Fitur Wajib ✅
 
-- **Tambah Kandidat**: Owner (admin) bisa menambahkan kandidat baru
-- **Voting**: User bisa melakukan vote untuk kandidat pilihan (sekali per user)
-- **Hasil Voting**: Menampilkan hasil voting dan menentukan pemenang
-- **Event Logging**: Setiap aksi penting tercatat sebagai event di blockchain
+- [x] **Connect Wallet** — Detect MetaMask, request connection, display address
+- [x] **Daftar Kandidat** (Read) — Menampilkan semua kandidat dengan progress bar voting
+- [x] **Hasil Voting** (Read) — Visualisasi chart hasil voting + pemenang
+- [x] **Vote Kandidat** (Write) — User bisa memilih kandidat pilihan
+- [x] **Tambah Kandidat** (Write) — Admin/owner bisa menambah kandidat baru
+- [x] **Set Deadline** (Write) — Admin bisa mengatur batas waktu voting
+- [x] **Double Vote Prevention** — UI feedback jika sudah pernah voting
+- [x] **Loading States** — Spinner saat transaksi pending
+- [x] **Error Handling** — Pesan error user-friendly
+- [x] **Network Detection** — Warning jika MetaMask di network yang salah
+- [x] **Responsive Design** — Mobile-friendly layout
 
 ### Fitur Bonus 🌟
 
-- **Deadline Voting**: Owner bisa mengatur batas waktu voting
-- **Minimum Quorum**: Hasil voting hanya valid jika jumlah voter mencapai minimal tertentu
+- [x] **Dark Mode** — Default dark theme premium
+- [x] **Countdown Deadline** — Timer real-time sisa waktu voting
+- [x] **Event Listening** — Real-time update saat ada vote baru via smart contract events
+- [x] **Transaction History** — Riwayat voting dari blockchain events
+- [x] **Loading Skeleton** — Skeleton loading animation
+- [x] **Admin Panel** — Panel khusus owner untuk manage voting
 
-## Tech Stack
+## Smart Contract Details
 
-- **Solidity** `^0.8.20` - Bahasa pemrograman smart contract
-- **Hardhat** - Development environment
-- **Ethers.js** - Library untuk interaksi dengan blockchain
-- **Chai** - Testing framework
+### State Variables (6)
+
+| Variable | Type | Deskripsi |
+|----------|------|-----------|
+| `owner` | `address` | Pemilik contract |
+| `votingDeadline` | `uint256` | Batas waktu voting (UNIX timestamp) |
+| `minimumQuorum` | `uint256` | Jumlah minimum voter |
+| `totalVoters` | `uint256` | Total voter yang sudah vote |
+| `candidates` | `Candidate[]` | Array kandidat (struct) |
+| `hasVoted` | `mapping(address => bool)` | Tracking voter |
+
+### Functions (6)
+
+| Function | Akses | Jenis | Deskripsi |
+|----------|-------|-------|-----------|
+| `addCandidate(name)` | onlyOwner | Write | Menambah kandidat baru |
+| `vote(candidateId)` | public | Write | Melakukan voting |
+| `setDeadline(minutes)` | onlyOwner | Write | Set deadline voting |
+| `getCandidateCount()` | view | Read | Jumlah kandidat |
+| `getCandidate(id)` | view | Read | Detail kandidat |
+| `getWinner()` | view | Read | Pemenang voting |
+
+### Events (3)
+
+- `CandidateAdded(uint256 candidateId, string name)`
+- `Voted(address voter, uint256 candidateId)`
+- `DeadlineSet(uint256 deadline)`
+
+### Modifiers (2)
+
+- `onlyOwner` — Hanya pemilik contract
+- `votingOpen` — Voting harus masih dalam periode
 
 ## Cara Menjalankan
 
 ### Prerequisites
 
 - Node.js v18+
-- npm atau pnpm
+- MetaMask browser extension
+- Git
 
-### Installation
+### 1. Clone Repository
 
 ```bash
+git clone [url-repo]
+cd [nama-folder]
+```
+
+### 2. Install Dependencies
+
+```bash
+# Root folder (smart contract)
+npm install
+
+# Frontend folder
+cd frontend
 npm install
 ```
 
-### Compile
+### 3. Jalankan Local Blockchain
 
 ```bash
-npx hardhat compile
-```
-
-### Test
-
-```bash
-npx hardhat test
-```
-
-### Deploy (Local)
-
-```bash
-
+# Terminal 1
 npx hardhat node
+```
 
-# Terminal 2: Deploy contract
+### 4. Deploy Smart Contract
+
+```bash
+# Terminal 2
 npx hardhat run scripts/deploy.js --network localhost
 ```
 
-### Interact
+### 5. Update Contract Address
 
-```bash
+Copy address dari output deploy, lalu paste ke `frontend/src/utils/contract.js`:
 
-npx hardhat run scripts/interact.js --network localhost
+```javascript
+export const CONTRACT_ADDRESS = "PASTE_ADDRESS_DI_SINI";
 ```
 
-## Smart Contract Details
+### 6. Import Account ke MetaMask
 
-### State Variables
+1. Copy private key dari output `npx hardhat node`
+2. Buka MetaMask → Import Account → Paste private key
+3. Tambah network: Localhost 8545 (Chain ID: 31337)
 
-| Variable         | Type                       | Deskripsi                           |
-| ---------------- | -------------------------- | ----------------------------------- |
-| `owner`          | `address`                  | Pemilik contract                    |
-| `votingDeadline` | `uint256`                  | Batas waktu voting (UNIX timestamp) |
-| `minimumQuorum`  | `uint256`                  | Jumlah minimum voter                |
-| `totalVoters`    | `uint256`                  | Total voter yang sudah vote         |
-| `candidates`     | `Candidate[]`              | Array kandidat                      |
-| `hasVoted`       | `mapping(address => bool)` | Tracking voter                      |
+### 7. Jalankan Frontend
 
-### Functions
+```bash
+cd frontend
+npm run dev
+```
 
-| Function               | Akses     | Deskripsi              |
-| ---------------------- | --------- | ---------------------- |
-| `addCandidate(name)`   | onlyOwner | Menambah kandidat baru |
-| `vote(candidateId)`    | public    | Melakukan voting       |
-| `setDeadline(minutes)` | onlyOwner | Set deadline voting    |
-| `getCandidateCount()`  | view      | Jumlah kandidat        |
-| `getCandidate(id)`     | view      | Detail kandidat        |
-| `getWinner()`          | view      | Pemenang voting        |
+### 8. Buka Browser
 
-### Events
-
-- `CandidateAdded(uint256 candidateId, string name)`
-- `Voted(address voter, uint256 candidateId)`
-- `DeadlineSet(uint256 deadline)`
+```
+http://localhost:5173
+```
 
 ## Contract Address
 
-> _Diisi setelah deploy_
+- **Local:** Diisi setelah deploy (`npx hardhat run scripts/deploy.js --network localhost`)
 
 ## Screenshot
 
-> ![alt text](images/compile.png)
->
-> 1. Compile berhasil (`npx hardhat compile`)
->
-> ![alt text](images/test.png)
->
-> 2. Test passing (`npx hardhat test`)
->
-> ![alt text](images/deploy1.png)
->
-> ![alt text](images/deploy2.png)
->
-> 3. Deploy berhasil (output contract address)
->
-> ![alt text](images/meta.png)
->
-> 4. MetaMask connected (Network Hardhat Local)
->
-> ![alt text](images/vote1.png)
->
-> ![alt text](images/vote2.png)
->
-> 5. Transaksi berhasil (minimal 2 transaksi berbeda)
->
-> ![alt text](images/state.png)
->
-> 6. State berubah (bukti perubahan data di contract)
+> _Diisi setelah aplikasi berjalan_
+
+## Demo
+
+> _Link video demo atau GIF_
