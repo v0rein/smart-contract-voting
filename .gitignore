@@ -44,3 +44,8 @@ project-03-dapp.md
 # Frontend
 frontend/node_modules/
 frontend/dist/
+
+# Generated ABIs
+compiled_abi.json
+new_abi.json
+*abi.json

@@ -6,9 +6,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ethers } from "ethers";
 import {
-  CONTRACT_ADDRESS,
   CONTRACT_ABI,
   isSupportedNetwork,
+  getContractAddress,
 } from "../utils/contract";
 import { formatError } from "../utils/helpers";
 
@@ -70,14 +70,16 @@ export function useContract() {
       setChainId(Number(network.chainId));
       setIsCorrectNetwork(isSupportedNetwork(Number(network.chainId)));
 
+      const dynamicContractAddress = getContractAddress(Number(network.chainId));
+
       // Setup contracts
       const readContract = new ethers.Contract(
-        CONTRACT_ADDRESS,
+        dynamicContractAddress,
         CONTRACT_ABI,
         prov,
       );
       const rwContract = new ethers.Contract(
-        CONTRACT_ADDRESS,
+        dynamicContractAddress,
         CONTRACT_ABI,
         sign,
       );
