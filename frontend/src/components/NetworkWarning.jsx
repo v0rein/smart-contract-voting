@@ -3,16 +3,19 @@
 // Peringatan jika network MetaMask tidak didukung
 // ============================================
 
-import { HARDHAT_CHAIN_ID, HARDHAT_CHAIN_ID_HEX } from "../utils/contract";
+import { SUPPORTED_NETWORKS, HARDHAT_CHAIN_ID } from "../utils/contract";
 
 export default function NetworkWarning({ chainId, isCorrectNetwork }) {
   if (isCorrectNetwork || !chainId) return null;
+
+  // Default fallback to Hardhat if they want to switch automatically
+  const defaultNetwork = SUPPORTED_NETWORKS[HARDHAT_CHAIN_ID];
 
   const switchNetwork = async () => {
     try {
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: HARDHAT_CHAIN_ID_HEX }],
+        params: [{ chainId: defaultNetwork.chainIdHex }],
       });
     } catch (err) {
       if (err.code === 4902) {
@@ -21,10 +24,11 @@ export default function NetworkWarning({ chainId, isCorrectNetwork }) {
             method: "wallet_addEthereumChain",
             params: [
               {
-                chainId: HARDHAT_CHAIN_ID_HEX,
-                chainName: "Hardhat Local",
-                rpcUrls: ["http://127.0.0.1:8545"],
-                nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+                chainId: defaultNetwork.chainIdHex,
+                chainName: defaultNetwork.name,
+                rpcUrls: [defaultNetwork.rpcUrl],
+                nativeCurrency: defaultNetwork.nativeCurrency,
+                blockExplorerUrls: defaultNetwork.blockExplorer ? [defaultNetwork.blockExplorer] : null,
               },
             ],
           });
@@ -46,7 +50,7 @@ export default function NetworkWarning({ chainId, isCorrectNetwork }) {
         <div>
           <strong>Network Tidak Didukung!</strong>
           <p>
-            Saat ini terhubung ke chain ID: {chainId}. Harap ganti ke jaringan Hardhat Local (Chain ID: {HARDHAT_CHAIN_ID}).
+            Saat ini terhubung ke chain ID: {chainId}. Harap ganti ke jaringan yang didukung (misal: Hardhat Local / Sepolia).
           </p>
         </div>
         <button className="btn btn-warning btn-sm" onClick={switchNetwork} id="btn-switch-network">

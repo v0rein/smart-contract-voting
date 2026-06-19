@@ -5,6 +5,7 @@
 // ============================================
 
 import { getCandidateColor, getInitials } from "../utils/helpers";
+import SkeletonLoader from "./SkeletonLoader";
 
 export default function CandidateList({
   candidates,
@@ -29,16 +30,8 @@ export default function CandidateList({
             Daftar Kandidat
           </h2>
         </div>
-        <div className="skeleton-list">
-          {[1, 2, 3].map((i) => (
-            <div className="skeleton-card" key={i}>
-              <div className="skeleton skeleton-avatar"></div>
-              <div className="skeleton-content">
-                <div className="skeleton skeleton-title"></div>
-                <div className="skeleton skeleton-bar"></div>
-              </div>
-            </div>
-          ))}
+        <div className="candidate-grid">
+          <SkeletonLoader type="candidate" count={3} />
         </div>
       </div>
     );

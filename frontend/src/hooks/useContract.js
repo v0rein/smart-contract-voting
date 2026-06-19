@@ -8,15 +8,13 @@ import { ethers } from "ethers";
 import {
   CONTRACT_ADDRESS,
   CONTRACT_ABI,
-  HARDHAT_CHAIN_ID,
+  isSupportedNetwork,
 } from "../utils/contract";
 import { formatError } from "../utils/helpers";
 
 export function useContract() {
   // ---- State ----
   const [account, setAccount] = useState(null);
-  const [provider, setProvider] = useState(null);
-  const [signer, setSigner] = useState(null);
   const [contract, setContract] = useState(null); // read-only contract
   const [writeContract, setWriteContract] = useState(null); // read-write contract
   const [isOwner, setIsOwner] = useState(false);
@@ -29,24 +27,23 @@ export function useContract() {
   const [candidates, setCandidates] = useState([]);
   const [totalVoters, setTotalVoters] = useState(0);
   const [hasVoted, setHasVoted] = useState(false);
-  const [votingDeadline, setVotingDeadline] = useState(0n);
   const [minimumQuorum, setMinimumQuorum] = useState(0);
   const [winner, setWinner] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Fitur Lanjutan State
+  const [votingOpen, setVotingOpen] = useState(false);
+  const [votingStartTime, setVotingStartTime] = useState(0n);
+  const [votingEndTime, setVotingEndTime] = useState(0n);
+  const [registeredVotersCount, setRegisteredVotersCount] = useState(0);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [delegatedTo, setDelegatedTo] = useState(null);
 
   // Transaction history (from events)
   const [voteHistory, setVoteHistory] = useState([]);
 
   // Refs untuk event listeners
   const contractRef = useRef(null);
-
-  // ---- Setup Provider ----
-  const setupProvider = useCallback(async () => {
-    if (!window.ethereum) return null;
-    const prov = new ethers.BrowserProvider(window.ethereum);
-    setProvider(prov);
-    return prov;
-  }, []);
 
   // ---- Connect Wallet ----
   const connectWallet = useCallback(async () => {
@@ -69,11 +66,9 @@ export function useContract() {
       const sign = await prov.getSigner();
       const network = await prov.getNetwork();
 
-      setProvider(prov);
-      setSigner(sign);
       setAccount(accounts[0]);
       setChainId(Number(network.chainId));
-      setIsCorrectNetwork(Number(network.chainId) === HARDHAT_CHAIN_ID);
+      setIsCorrectNetwork(isSupportedNetwork(Number(network.chainId)));
 
       // Setup contracts
       const readContract = new ethers.Contract(
@@ -107,18 +102,20 @@ export function useContract() {
   // ---- Disconnect Wallet ----
   const disconnectWallet = useCallback(() => {
     setAccount(null);
-    setProvider(null);
-    setSigner(null);
     setContract(null);
     setWriteContract(null);
     setIsOwner(false);
     setChainId(null);
     setIsCorrectNetwork(false);
+    
     setHasVoted(false);
     setCandidates([]);
     setTotalVoters(0);
     setWinner(null);
     setVoteHistory([]);
+    setVotingOpen(false);
+    setIsRegistered(false);
+    setDelegatedTo(null);
   }, []);
 
   // ---- Load Contract Data (READ operations) ----
@@ -128,39 +125,53 @@ export function useContract() {
     try {
       setIsLoading(true);
 
-      // Read: getCandidateCount + getCandidate (loop)
-      const count = await contract.getCandidateCount();
-      const candidateList = [];
-      for (let i = 0; i < Number(count); i++) {
-        const [name, voteCount] = await contract.getCandidate(i);
-        candidateList.push({ id: i, name, voteCount: Number(voteCount) });
-      }
-      setCandidates(candidateList);
+      const candidatesData = await contract.getAllCandidates();
+      const formattedCandidates = candidatesData.map((c) => ({
+        id: Number(c.id),
+        name: c.name,
+        voteCount: Number(c.voteCount),
+      }));
+      setCandidates(formattedCandidates);
 
-      // Read: totalVoters
-      const voters = await contract.totalVoters();
-      setTotalVoters(Number(voters));
+      const totalVotersData = await contract.totalVoters();
+      setTotalVoters(Number(totalVotersData));
 
-      // Read: votingDeadline
-      const deadline = await contract.votingDeadline();
-      setVotingDeadline(deadline);
-
-      // Read: minimumQuorum
       const quorum = await contract.minimumQuorum();
       setMinimumQuorum(Number(quorum));
 
-      // Read: hasVoted (for connected account)
+      const isOpen = await contract.votingOpen();
+      setVotingOpen(isOpen);
+
+      const startTime = await contract.votingStartTime();
+      setVotingStartTime(startTime);
+
+      const endTime = await contract.votingEndTime();
+      setVotingEndTime(endTime);
+
+      const registeredCount = await contract.registeredVotersCount();
+      setRegisteredVotersCount(Number(registeredCount));
+
       if (account) {
-        const voted = await contract.hasVoted(account);
+        const voted = await contract.checkIfVoted(account);
         setHasVoted(voted);
+
+        const registered = await contract.registeredVoters(account);
+        setIsRegistered(registered);
+
+        const delegateAddress = await contract.delegations(account);
+        if (delegateAddress !== ethers.ZeroAddress) {
+          setDelegatedTo(delegateAddress);
+        } else {
+          setDelegatedTo(null);
+        }
       }
 
-      // Read: getWinner (might revert if quorum not met)
+      // Read: getWinner
       try {
         const [winnerName, winnerVoteCount] = await contract.getWinner();
         setWinner({ name: winnerName, voteCount: Number(winnerVoteCount) });
       } catch {
-        setWinner(null); // Quorum not met or no candidates
+        setWinner(null); 
       }
     } catch (err) {
       console.error("Error loading contract data:", err);
@@ -179,10 +190,11 @@ export function useContract() {
       const history = events.map((e) => ({
         voter: e.args[0],
         candidateId: Number(e.args[1]),
+        weight: Number(e.args[2]),
         blockNumber: e.blockNumber,
         txHash: e.transactionHash,
       }));
-      setVoteHistory(history.reverse()); // newest first
+      setVoteHistory(history.reverse()); 
     } catch (err) {
       console.error("Error loading vote history:", err);
     }
@@ -192,7 +204,6 @@ export function useContract() {
   const vote = useCallback(
     async (candidateId) => {
       if (!writeContract) throw new Error("Wallet belum terkoneksi");
-
       const tx = await writeContract.vote(candidateId);
       await tx.wait();
       await loadContractData();
@@ -202,11 +213,22 @@ export function useContract() {
     [writeContract, loadContractData, loadVoteHistory],
   );
 
+  // ---- WRITE: Delegate ----
+  const delegateVote = useCallback(
+    async (toAddress) => {
+      if (!writeContract) throw new Error("Wallet belum terkoneksi");
+      const tx = await writeContract.delegate(toAddress);
+      await tx.wait();
+      await loadContractData();
+      return tx;
+    },
+    [writeContract, loadContractData],
+  );
+
   // ---- WRITE: Add Candidate ----
   const addCandidate = useCallback(
     async (name) => {
       if (!writeContract) throw new Error("Wallet belum terkoneksi");
-
       const tx = await writeContract.addCandidate(name);
       await tx.wait();
       await loadContractData();
@@ -215,12 +237,11 @@ export function useContract() {
     [writeContract, loadContractData],
   );
 
-  // ---- WRITE: Set Deadline ----
-  const setDeadline = useCallback(
-    async (durationInMinutes) => {
+  // ---- WRITE: Set Voting Status ----
+  const setVotingStatusAction = useCallback(
+    async (status) => {
       if (!writeContract) throw new Error("Wallet belum terkoneksi");
-
-      const tx = await writeContract.setDeadline(durationInMinutes);
+      const tx = await writeContract.setVotingStatus(status);
       await tx.wait();
       await loadContractData();
       return tx;
@@ -228,31 +249,82 @@ export function useContract() {
     [writeContract, loadContractData],
   );
 
+  // ---- WRITE: Set Voting Period ----
+  const setVotingPeriodAction = useCallback(
+    async (startTime, endTime) => {
+      if (!writeContract) throw new Error("Wallet belum terkoneksi");
+      const tx = await writeContract.setVotingPeriod(startTime, endTime);
+      await tx.wait();
+      await loadContractData();
+      return tx;
+    },
+    [writeContract, loadContractData],
+  );
+
+  // ---- WRITE: Register Voter ----
+  const registerVoterAction = useCallback(
+    async (voterAddress) => {
+      if (!writeContract) throw new Error("Wallet belum terkoneksi");
+      const tx = await writeContract.registerVoter(voterAddress);
+      await tx.wait();
+      await loadContractData();
+      return tx;
+    },
+    [writeContract, loadContractData],
+  );
+
+  // ---- WRITE: Set Minimum Quorum ----
+  const setMinimumQuorumAction = useCallback(
+    async (newQuorum) => {
+      if (!writeContract) throw new Error("Wallet belum terkoneksi");
+      const tx = await writeContract.setMinimumQuorum(newQuorum);
+      await tx.wait();
+      await loadContractData();
+      return tx;
+    },
+    [writeContract, loadContractData],
+  );
+
+  // ---- WRITE: Set Voter Weight ----
+  const setVoterWeightAction = useCallback(
+    async (voterAddress, weight) => {
+      if (!writeContract) throw new Error("Wallet belum terkoneksi");
+      const tx = await writeContract.setVoterWeight(voterAddress, weight);
+      await tx.wait();
+      return tx;
+    },
+    [writeContract],
+  );
+
   // ---- Event Listeners (Real-time updates) ----
   useEffect(() => {
     if (!contract) return;
+
+    const onUpdate = () => {
+      loadContractData();
+    };
 
     const onVoted = () => {
       loadContractData();
       loadVoteHistory();
     };
 
-    const onCandidateAdded = () => {
-      loadContractData();
-    };
-
-    const onDeadlineSet = () => {
-      loadContractData();
-    };
-
     contract.on("Voted", onVoted);
-    contract.on("CandidateAdded", onCandidateAdded);
-    contract.on("DeadlineSet", onDeadlineSet);
+    contract.on("CandidateAdded", onUpdate);
+    contract.on("VotingStatusChanged", onUpdate);
+    contract.on("VotingPeriodSet", onUpdate);
+    contract.on("VoterRegistered", onUpdate);
+    contract.on("VoteDelegated", onUpdate);
+    contract.on("QuorumUpdated", onUpdate);
 
     return () => {
       contract.off("Voted", onVoted);
-      contract.off("CandidateAdded", onCandidateAdded);
-      contract.off("DeadlineSet", onDeadlineSet);
+      contract.off("CandidateAdded", onUpdate);
+      contract.off("VotingStatusChanged", onUpdate);
+      contract.off("VotingPeriodSet", onUpdate);
+      contract.off("VoterRegistered", onUpdate);
+      contract.off("VoteDelegated", onUpdate);
+      contract.off("QuorumUpdated", onUpdate);
     };
   }, [contract, loadContractData, loadVoteHistory]);
 
@@ -265,7 +337,6 @@ export function useContract() {
         disconnectWallet();
       } else {
         setAccount(accounts[0]);
-        // Re-connect to update signer
         connectWallet();
       }
     };
@@ -286,8 +357,12 @@ export function useContract() {
   // ---- Auto-load data when contract is ready ----
   useEffect(() => {
     if (contract) {
-      loadContractData();
-      loadVoteHistory();
+      // eslint-disable-next-line react-hooks/rules-of-hooks, no-restricted-syntax
+      const fetchInitialData = async () => {
+        await loadContractData();
+        await loadVoteHistory();
+      };
+      fetchInitialData();
     }
   }, [contract, loadContractData, loadVoteHistory]);
 
@@ -305,17 +380,29 @@ export function useContract() {
     candidates,
     totalVoters,
     hasVoted,
-    votingDeadline,
     minimumQuorum,
     winner,
     voteHistory,
+
+    // Fitur Lanjutan Data
+    votingOpen,
+    votingStartTime,
+    votingEndTime,
+    registeredVotersCount,
+    isRegistered,
+    delegatedTo,
 
     // Actions
     connectWallet,
     disconnectWallet,
     vote,
+    delegateVote,
     addCandidate,
-    setDeadline,
+    setVotingStatusAction,
+    setVotingPeriodAction,
+    registerVoterAction,
+    setMinimumQuorumAction,
+    setVoterWeightAction,
     loadContractData,
 
     // Setters

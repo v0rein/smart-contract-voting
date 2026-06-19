@@ -1,7 +1,7 @@
 const hre = require("hardhat");
 
 async function main() {
-  const blocksToMine = 10;
+  const blocksToMine = 30;
   for (let i = 0; i < blocksToMine; i++) {
     await hre.network.provider.send("evm_mine");
   }

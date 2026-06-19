@@ -1,7 +1,6 @@
 // ============================================
 // VoteAction Component
-// Form voting + transaction feedback
-// WRITE operation: vote(candidateId)
+// Form voting + transaction feedback + Delegasi
 // ============================================
 
 import { useState } from "react";
@@ -13,15 +12,30 @@ export default function VoteAction({
   selectedCandidate,
   candidates,
   onVote,
-  votingDeadline,
+  onDelegate,
+  votingOpen,
+  votingStartTime,
+  votingEndTime,
+  isRegistered,
+  delegatedTo,
 }) {
   const [txStatus, setTxStatus] = useState(null); // null | "pending" | "success" | "failed"
   const [txHash, setTxHash] = useState(null);
   const [error, setError] = useState(null);
 
-  // Check if voting is closed
-  const isDeadlinePassed =
-    votingDeadline && votingDeadline !== 0n && Number(votingDeadline) * 1000 < Date.now();
+  const [delegateAddress, setDelegateAddress] = useState("");
+  const [delegateStatus, setDelegateStatus] = useState(null);
+  const [delegateError, setDelegateError] = useState(null);
+
+  // Check if voting is closed manually
+  const isVotingClosedManually = !votingOpen;
+
+  // Check time bounds
+  const nowStr = Math.floor(Date.now() / 1000);
+  const isBeforeStart = votingStartTime > 0n && nowStr < Number(votingStartTime);
+  const isDeadlinePassed = votingEndTime > 0n && nowStr > Number(votingEndTime);
+
+  const canVote = isRegistered && !hasVoted && !delegatedTo && !isVotingClosedManually && !isBeforeStart && !isDeadlinePassed;
 
   const handleVote = async () => {
     if (selectedCandidate === null) return;
@@ -35,7 +49,6 @@ export default function VoteAction({
       setTxHash(tx.hash);
       setTxStatus("success");
 
-      // Auto-clear success after 5 seconds
       setTimeout(() => {
         setTxStatus(null);
         setTxHash(null);
@@ -43,6 +56,23 @@ export default function VoteAction({
     } catch (err) {
       setTxStatus("failed");
       setError(formatError(err));
+    }
+  };
+
+  const handleDelegate = async (e) => {
+    e.preventDefault();
+    if (!delegateAddress.trim()) return;
+
+    try {
+      setDelegateStatus("pending");
+      setDelegateError(null);
+      await onDelegate(delegateAddress.trim());
+      setDelegateStatus("success");
+      setDelegateAddress("");
+      setTimeout(() => setDelegateStatus(null), 3000);
+    } catch (err) {
+      setDelegateStatus("failed");
+      setDelegateError(formatError(err));
     }
   };
 
@@ -85,11 +115,39 @@ export default function VoteAction({
             <path d="M12 17v4" />
             <path d="M7 10l3 3 7-7" />
           </svg>
-          Vote
+          Vote & Delegasi
         </h2>
+        {!isRegistered && (
+          <span className="badge badge-warning">Belum Terdaftar</span>
+        )}
       </div>
 
-      {hasVoted ? (
+      {!isRegistered ? (
+        <div className="vote-status vote-closed">
+          <div className="vote-status-icon warning">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <h3>Akses Ditolak</h3>
+          <p>Anda belum terdaftar (whitelist) sebagai voter. Hubungi admin.</p>
+        </div>
+      ) : delegatedTo ? (
+        <div className="vote-status vote-done">
+          <div className="vote-status-icon success">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
+          <h3>Suara Didelegasikan</h3>
+          <p>Anda telah mendelegasikan suara ke:<br/><strong>{delegatedTo}</strong></p>
+        </div>
+      ) : hasVoted ? (
         <div className="vote-status vote-done">
           <div className="vote-status-icon success">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -100,7 +158,7 @@ export default function VoteAction({
           <h3>Anda Sudah Voting!</h3>
           <p>Terima kasih, suara Anda sudah tercatat di blockchain.</p>
         </div>
-      ) : isDeadlinePassed ? (
+      ) : isVotingClosedManually ? (
         <div className="vote-status vote-closed">
           <div className="vote-status-icon warning">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -109,7 +167,29 @@ export default function VoteAction({
             </svg>
           </div>
           <h3>Voting Ditutup</h3>
-          <p>Deadline voting sudah terlewat.</p>
+          <p>Sesi voting sedang tidak aktif.</p>
+        </div>
+      ) : isBeforeStart ? (
+        <div className="vote-status vote-closed">
+          <div className="vote-status-icon warning">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </div>
+          <h3>Voting Belum Dimulai</h3>
+          <p>Sesi voting belum memasuki jadwal.</p>
+        </div>
+      ) : isDeadlinePassed ? (
+        <div className="vote-status vote-closed">
+          <div className="vote-status-icon warning">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </div>
+          <h3>Voting Selesai</h3>
+          <p>Waktu voting sudah berakhir.</p>
         </div>
       ) : (
         <div className="vote-form">
@@ -126,7 +206,7 @@ export default function VoteAction({
           <button
             className="btn btn-primary btn-lg btn-glow btn-full"
             onClick={handleVote}
-            disabled={selectedCandidate === null || txStatus === "pending"}
+            disabled={selectedCandidate === null || txStatus === "pending" || !canVote}
             id="btn-vote"
           >
             {txStatus === "pending" ? (
@@ -174,6 +254,33 @@ export default function VoteAction({
               </button>
             </div>
           )}
+
+          <hr style={{ margin: "20px 0", borderColor: "var(--border-color)", opacity: 0.5 }} />
+
+          {/* Delegate Form */}
+          <div className="delegate-section">
+            <h4 style={{ marginBottom: "10px" }}>Atau Delegasikan Suara Anda</h4>
+            <form onSubmit={handleDelegate} style={{ display: "flex", gap: "10px" }}>
+              <input
+                type="text"
+                placeholder="Address voter lain..."
+                value={delegateAddress}
+                onChange={(e) => setDelegateAddress(e.target.value)}
+                className="input"
+                style={{ flex: 1 }}
+                disabled={delegateStatus === "pending" || !canVote}
+              />
+              <button
+                type="submit"
+                className="btn btn-outline"
+                disabled={!delegateAddress || delegateStatus === "pending" || !canVote}
+              >
+                {delegateStatus === "pending" ? <span className="spinner spinner-sm"></span> : "Delegasi"}
+              </button>
+            </form>
+            {delegateStatus === "success" && <div className="tx-feedback tx-success compact">Delegasi berhasil!</div>}
+            {delegateStatus === "failed" && <div className="tx-feedback tx-failed compact">{delegateError}</div>}
+          </div>
         </div>
       )}
     </div>

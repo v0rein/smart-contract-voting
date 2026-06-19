@@ -11,7 +11,8 @@ import CandidateList from "./components/CandidateList";
 import VoteAction from "./components/VoteAction";
 import VotingResults from "./components/VotingResults";
 import AdminPanel from "./components/AdminPanel";
-import { CONTRACT_ADDRESS } from "./utils/contract";
+import ThemeToggle from "./components/ThemeToggle";
+import { CONTRACT_ADDRESS, getNetworkName } from "./utils/contract";
 import { truncateAddress } from "./utils/helpers";
 import "./App.css";
 
@@ -27,15 +28,25 @@ function App() {
     candidates,
     totalVoters,
     hasVoted,
-    votingDeadline,
     minimumQuorum,
     winner,
     voteHistory,
+    votingOpen,
+    votingStartTime,
+    votingEndTime,
+    registeredVotersCount,
+    isRegistered,
+    delegatedTo,
     connectWallet,
     disconnectWallet,
     vote,
+    delegateVote,
     addCandidate,
-    setDeadline,
+    setVotingStatusAction,
+    setVotingPeriodAction,
+    registerVoterAction,
+    setMinimumQuorumAction,
+    setVoterWeightAction,
     setError,
   } = useContract();
 
@@ -74,8 +85,14 @@ function App() {
                 {isOwner && <span className="badge badge-admin">Admin</span>}
                 <span className="network-badge">
                   <span className={`dot ${isCorrectNetwork ? "dot-green" : "dot-red"}`}></span>
-                  {isCorrectNetwork ? "Hardhat Local" : "Wrong Network"}
+                  {isCorrectNetwork ? getNetworkName(chainId) : "Wrong Network"}
                 </span>
+                <ThemeToggle />
+              </div>
+            )}
+            {!account && (
+              <div className="header-meta">
+                <ThemeToggle />
               </div>
             )}
             <ConnectWallet
@@ -165,7 +182,10 @@ function App() {
               totalVoters={totalVoters}
               minimumQuorum={minimumQuorum}
               winner={winner}
-              votingDeadline={votingDeadline}
+              votingOpen={votingOpen}
+              votingStartTime={votingStartTime}
+              votingEndTime={votingEndTime}
+              registeredVotersCount={registeredVotersCount}
               voteHistory={voteHistory}
               isLoading={isLoading}
             />
@@ -188,7 +208,12 @@ function App() {
                 selectedCandidate={selectedCandidate}
                 candidates={candidates}
                 onVote={vote}
-                votingDeadline={votingDeadline}
+                onDelegate={delegateVote}
+                votingOpen={votingOpen}
+                votingStartTime={votingStartTime}
+                votingEndTime={votingEndTime}
+                isRegistered={isRegistered}
+                delegatedTo={delegatedTo}
               />
             </div>
 
@@ -196,9 +221,16 @@ function App() {
             <AdminPanel
               isOwner={isOwner}
               account={account}
+              votingOpen={votingOpen}
+              votingStartTime={votingStartTime}
+              votingEndTime={votingEndTime}
+              minimumQuorum={minimumQuorum}
               onAddCandidate={addCandidate}
-              onSetDeadline={setDeadline}
-              votingDeadline={votingDeadline}
+              onSetVotingStatus={setVotingStatusAction}
+              onSetVotingPeriod={setVotingPeriodAction}
+              onRegisterVoter={registerVoterAction}
+              onSetMinimumQuorum={setMinimumQuorumAction}
+              onSetVoterWeight={setVoterWeightAction}
             />
           </div>
         )}

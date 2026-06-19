@@ -85,6 +85,46 @@
   --container-max: 1100px;
 }
 
+[data-theme="light"] {
+  /* Core backgrounds */
+  --bg-primary: #f5f7fb;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-hover: rgba(240, 243, 255, 0.9);
+  --bg-glass: rgba(0, 0, 0, 0.03);
+  --bg-glass-hover: rgba(0, 0, 0, 0.06);
+
+  /* Borders */
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.15);
+  --border-active: rgba(139, 92, 246, 0.5);
+
+  /* Text */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.2);
+  --shadow-glow-lg: 0 0 40px rgba(139, 92, 246, 0.25);
+}
+
+/* Light theme scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Light theme spinner */
+[data-theme="light"] .spinner {
+  border-color: rgba(0, 0, 0, 0.12);
+  border-top-color: var(--accent-primary);
+}
 
 /* ---- Reset & Base ---- */
 *,
@@ -109,6 +149,7 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ---- Scrollbar ---- */
@@ -481,3 +522,83 @@ body {
     padding: 0 var(--space-md);
   }
 }
+
+/* =========================================
+   SKELETON LOADING ANIMATION
+========================================= */
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton-text, .skeleton-avatar, .skeleton-icon, .skeleton-button {
+  animation: skeleton-shimmer 1.5s infinite linear;
+  background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
+  background-size: 200px 100%;
+  border-radius: 4px;
+}
+
+[data-theme='light'] .skeleton-text, 
+[data-theme='light'] .skeleton-avatar, 
+[data-theme='light'] .skeleton-icon, 
+[data-theme='light'] .skeleton-button {
+  background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%);
+  background-size: 200px 100%;
+}
+
+.skeleton-card {
+  border: 1px solid var(--border);
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.skeleton-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 60%;
+  margin-bottom: 8px;
+}
+
+.skeleton-subtitle {
+  height: 14px;
+  width: 40%;
+}
+
+.skeleton-button {
+  height: 36px;
+  width: 80px;
+  border-radius: 20px;
+}
+
+.skeleton-stat {
+  pointer-events: none;
+}
+
+.skeleton-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.skeleton-value {
+  height: 28px;
+  width: 50%;
+  margin-bottom: 6px;
+}
+
+.skeleton-label {
+  height: 14px;
+  width: 70%;
+}
+
